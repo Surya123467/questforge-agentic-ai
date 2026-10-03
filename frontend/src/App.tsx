@@ -1,0 +1,14 @@
+import {useEffect,useState} from "react";
+type Trace={agent:string,status:string,output:string}; type World={location:string,discovered:string[],events:any[],memories:any[],npcs:any[]};
+const API="http://localhost:8000";
+export default function App(){
+ const [action,setAction]=useState("Search the security room"); const [scene,setScene]=useState("The laboratory waits in silence."); const [trace,setTrace]=useState<Trace[]>([]); const [world,setWorld]=useState<World|null>(null); const [busy,setBusy]=useState(false);
+ async function act(a=action){setBusy(true);try{const r=await fetch(API+"/turn",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({session_id:"demo",action:a})});const d=await r.json();setScene(d.scene);setTrace(d.trace);setWorld(d.world)}finally{setBusy(false)}}
+ useEffect(()=>{fetch(API+"/session/demo").then(r=>r.json()).then(setWorld).catch(()=>{})},[]);
+ return <main><header><div className="brand"><span className="sigil">✦</span><div><b>QUESTFORGE</b><small>AGENTIC WORLD ENGINE</small></div></div><span className="live">● SYSTEM ONLINE</span></header>
+ <section className="hero"><div><p className="eyebrow">DYNAMIC ADVENTURE / MULTI-AGENT SIMULATION</p><h1>THE WORLD<br/><em>REMEMBERS.</em></h1><p className="sub">An AI Game Master coordinating world, NPC, story and memory agents to create a persistent adventure.</p></div><div className="node"><div className="orbit"></div><strong>5</strong><span>AGENTS</span></div></section>
+ <section className="grid"><div className="panel scene"><label>CURRENT SCENE</label><h2>{world?.location||"Meridian Laboratory"}</h2><p>{scene}</p><div className="actions">{["Search the security room","Talk to K-9","Enter the laboratory"].map(x=><button onClick={()=>{setAction(x);act(x)}}>{x}</button>)}</div><div className="composer"><input value={action} onChange={e=>setAction(e.target.value)} onKeyDown={e=>e.key==="Enter"&&act()}/><button onClick={()=>act()} disabled={busy}>{busy?"THINKING…":"ACT"}</button></div></div>
+ <aside className="panel"><label>WORLD MEMORY</label><h3>Discovered</h3>{(world?.discovered||[]).map(x=><div className="chip">◈ {x}</div>)}<h3>NPC STATE</h3>{world?.npcs?.map(n=><div className="npc"><b>{n.name}</b><span>{n.role}</span><i>attitude {n.attitude}</i></div>)}<h3>MEMORY</h3>{(world?.memories||[]).slice(-3).map(m=><div className="memory">“{m.content}”</div>)}</aside></section>
+ <section className="panel trace"><label>AGENT EXECUTION TRACE</label>{trace.length?trace.map((t,i)=><div className="step"><span>0{i+1}</span><b>{t.agent}</b><i>{t.status}</i><p>{t.output}</p></div>):<p className="muted">Take an action to watch the multi-agent workflow execute.</p>}</section>
+ </main>
+}
